@@ -6,7 +6,6 @@ const loop_file  	 = 'loop.mp4';
 const out_rtmp   = 'rtmp://127.0.0.1/feed/3';
 const timeout    = 10; // in 1/10th of a second
 
-
 var fallback=0;
 var mode = 'initial';
 
@@ -22,7 +21,7 @@ function initInputStream(){
 function initLoopStream(){
 
 	let toReturn = spawn("ffmpeg", ("-stream_loop -1 -re -i "+loop_file+" -c copy -f mpegts -").split(" "));
-	toReturn.on("exit", (code) => { console.log("ffmpegIn exited with code " + code); ffmpegLoop = initLoopStream() });
+	toReturn.on("exit", (code) => { console.log("ffmpegLoop exited with code " + code);});
 	toReturn.stdout.on("data", onDataLoop);
 
 	return toReturn;
@@ -34,32 +33,37 @@ const ffmpegOut = spawn("ffmpeg", ("-fflags +genpts -re -f mpegts -i - -c copy -
 ffmpegOut.on("exit", (code) => { console.log("ffmpegOut exited with code "+code+"! Exiting..."); process.exit(code); });
 
 var ffmpegIn = initInputStream();
-var ffmpegLoop = initLoopStream();
+var ffmpegLoop;
 
 function onData(videoData) {
-
 	if(mode != 'input') {
+		if(mode == 'loop'){
+			ffmpegLoop.kill('SIGKILL');
+		}
 		console.log('send input');
 		mode = 'input';
+		fallback=0;
 	}
 	ffmpegOut.stdin.write(videoData);
 	fallback=0;
+
 }
 
 function onDataLoop(videoData) {
-	
-	if(mode != 'initial')
-	if(fallback > timeout){
-		if(mode == 'input') {
-			console.log('send loop');
-			mode = 'loop';
-		}
-		ffmpegOut.stdin.write(videoData);
-	}
+
+	ffmpegOut.stdin.write(videoData);
 }
 
 setInterval(function(){
 	fallback++;
-}, 100);
 
+	if(fallback > timeout) {
+		if(mode == 'input') {
+			mode = 'loop';
+			console.log('send loop');
+			ffmpegLoop = initLoopStream();
+		}
+	}
+
+}, 100);
 
