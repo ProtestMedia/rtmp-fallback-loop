@@ -16,7 +16,7 @@ var mode = 'initial';
 function initInputStream()
 {
 	let toReturn = spawn("ffmpeg", ("-f live_flv -re -i "+input_rtmp+" -c copy -f mpegts -").split(" "));
-	toReturn.on("exit", (code) => { log("ffmpegIn restarted"); ffmpegIn = initInputStream() });
+	toReturn.on("exit", (code) => { ffmpegIn = initInputStream() });
 	toReturn.stdout.on("data", onData);
 	return toReturn;
 }
@@ -24,7 +24,6 @@ function initInputStream()
 function initLoopStream()
 {
 	let toReturn = spawn("ffmpeg", ("-stream_loop -1 -re -i "+loop_file+" -c copy -f mpegts -").split(" "));
-	toReturn.on("exit", (code) => { log("ffmpegLoop stopped");});
 	toReturn.stdout.on("data", onDataLoop);
 	return toReturn;
 }
