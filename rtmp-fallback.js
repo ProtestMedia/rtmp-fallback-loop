@@ -28,7 +28,9 @@ function initLoopStream()
 	return toReturn;
 }
 
-const ffmpegOut = spawn("ffmpeg", ("-fflags +genpts -re -f mpegts -i - -c copy -bsf:a aac_adtstoasc -f flv "+out_rtmp).split(" "));
+const ffmpegOut = spawn("ffmpeg", ("-re -f mpegts -i - -fflags +genpts+igndts+nobuffer+flush_packets -vsync 1 -c copy -bsf:a aac_adtstoasc -f flv "+out_rtmp).split(" "));
+//ffmpegOut.stderr.on("data", (data) => { console.log(data.toString());});
+//ffmpegOut.stdout.on("data", (data) => { console.log(data.toString());});
 ffmpegOut.on("exit", (code) => { log("ffmpegOut exited with code "+code+"! Exiting..."); process.exit(code); });
 
 var ffmpegIn = initInputStream();
